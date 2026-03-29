@@ -6,315 +6,446 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CubeTimer">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#0d0d1a">
   <link rel="manifest" href="manifest.json">
   <title>Cube Timer</title>
-
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@100;300;400;700&family=Space+Mono:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
 
     :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --border: #1e1e1e;
-      --text: #f0ece4;
-      --dim: #5a5550;
-      --accent: #e8622a;
-      --green: #3ddc84;
-      --red: #ff4444;
-      --yellow: #f5c842;
+      --bg:       #0d0d1a;
+      --surface:  #13132a;
+      --border:   #1e1e40;
+      --text:     #e8e8ff;
+      --dim:      #5a5a8a;
+      --cyan:     #00e5ff;
+      --orange:   #ff6d00;
+      --green:    #00e676;
+      --yellow:   #ffea00;
+      --red:      #ff1744;
+      --pink:     #f50057;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
     html, body {
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Azeret Mono', monospace;
-      touch-action: none;
-      user-select: none;
-      position: fixed;
+      height:100%; width:100%; overflow:hidden;
+      background:var(--bg); color:var(--text);
+      font-family:'Exo 2', sans-serif;
+      touch-action:none; user-select:none; position:fixed;
     }
 
-    /* ── LANDSCAPE LAYOUT ── */
+    /* star field background */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(0,229,255,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 50%, rgba(255,109,0,0.04) 0%, transparent 60%);
+      pointer-events:none; z-index:0;
+    }
+
     #app {
-      display: flex;
-      flex-direction: row;
-      height: 100dvh;
-      width: 100%;
+      display:flex; flex-direction:row;
+      height:100dvh; width:100%;
+      position:relative; z-index:1;
     }
 
-    /* ── HAND PADS ── */
+    /* ── PADS ── */
     .pad {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
+      flex:1;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:16px;
+      position:relative; overflow:hidden;
+      transition:background 0.2s;
       background: var(--surface);
-      position: relative;
-      overflow: hidden;
-      transition: background 0.15s;
     }
 
-    #pad-left  { border-right: 1px solid var(--border); }
-    #pad-right { border-left:  1px solid var(--border); }
+    #pad-left  { border-right:1px solid var(--border); }
+    #pad-right { border-left: 1px solid var(--border); }
 
-    /* big glow blob */
+    /* diagonal stripe pattern */
+    .pad::before {
+      content:'';
+      position:absolute; inset:0;
+      opacity:0.03;
+      background-image: repeating-linear-gradient(
+        45deg,
+        #fff 0px, #fff 1px,
+        transparent 1px, transparent 20px
+      );
+      transition:opacity 0.3s;
+    }
+
+    /* glow blob */
     .pad::after {
-      content: '';
-      position: absolute;
-      width: 80%;
-      height: 80%;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(232,98,42,0.10) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
+      content:'';
+      position:absolute;
+      width:70%; height:70%;
+      border-radius:50%;
+      opacity:0;
+      transition:opacity 0.35s;
+      pointer-events:none;
     }
+
+    #pad-left::after  { background:radial-gradient(circle, rgba(0,229,255,0.18) 0%, transparent 70%); }
+    #pad-right::after { background:radial-gradient(circle, rgba(255,109,0,0.18) 0%, transparent 70%); }
 
     .pad-icon {
-      font-size: 64px;
-      opacity: 0.12;
-      transition: opacity 0.2s, transform 0.25s;
+      font-size:72px;
+      opacity:0.13;
+      transition:opacity 0.25s, transform 0.25s;
+      filter:grayscale(1);
     }
 
     .pad-label {
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: #282828;
-      transition: color 0.2s;
+      font-family:'Exo 2', sans-serif;
+      font-size:13px;
+      font-weight:700;
+      letter-spacing:0.25em;
+      text-transform:uppercase;
+      color:var(--dim);
+      transition:color 0.2s;
     }
 
-    /* ACTIVE (holding) */
-    .pad.active { background: #161410; }
-    .pad.active::after { opacity: 1; }
-    .pad.active .pad-icon { opacity: 0.55; transform: scale(1.12); }
-    .pad.active .pad-label { color: var(--accent); }
+    .pad-hint {
+      font-size:10px;
+      font-weight:400;
+      letter-spacing:0.1em;
+      color:#2a2a50;
+      transition:color 0.2s;
+    }
+
+    /* HOLDING */
+    #pad-left.active  { background:#0d1520; }
+    #pad-right.active { background:#1a0d00; }
+    .pad.active::before { opacity:0.07; }
+    .pad.active::after  { opacity:1; }
+    .pad.active .pad-icon { opacity:0.6; transform:scale(1.15); filter:none; }
+    #pad-left.active  .pad-label { color:var(--cyan); }
+    #pad-right.active .pad-label { color:var(--orange); }
+    #pad-left.active  .pad-hint  { color:rgba(0,229,255,0.4); }
+    #pad-right.active .pad-hint  { color:rgba(255,109,0,0.4); }
 
     /* READY */
-    .pad.ready { background: #0c160e; }
-    .pad.ready::after {
-      background: radial-gradient(circle, rgba(61,220,132,0.12) 0%, transparent 70%);
-      opacity: 1;
+    #pad-left.ready  { background:#031510; }
+    #pad-right.ready { background:#031510; }
+    .pad.ready::before { opacity:0.07; }
+    .pad.ready::after  {
+      background:radial-gradient(circle, rgba(0,230,118,0.2) 0%, transparent 70%);
+      opacity:1;
     }
-    .pad.ready .pad-icon { opacity: 0.65; transform: scale(1.14); }
-    .pad.ready .pad-label { color: var(--green); }
+    .pad.ready .pad-icon  { opacity:0.7; transform:scale(1.18); filter:none; }
+    .pad.ready .pad-label { color:var(--green) !important; }
+    .pad.ready .pad-hint  { color:rgba(0,230,118,0.5) !important; }
 
-    /* ── CENTER PANEL ── */
+    /* ── CENTER ── */
     #center {
-      width: clamp(180px, 34vw, 300px);
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 10px;
-      padding-top: max(14px, env(safe-area-inset-top));
-      padding-bottom: max(14px, env(safe-area-inset-bottom));
+      width:clamp(190px, 35vw, 310px);
+      flex-shrink:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:space-between;
+      padding:16px 12px;
+      padding-top:max(16px, env(safe-area-inset-top));
+      padding-bottom:max(16px, env(safe-area-inset-bottom));
+      background:var(--bg);
+      border-left:1px solid var(--border);
+      border-right:1px solid var(--border);
+      position:relative;
     }
 
-    /* Scramble */
-    #scramble-wrap { text-align: center; width: 100%; }
+    /* ── SCRAMBLE ── */
+    #scramble-wrap { text-align:center; width:100%; }
 
     #scramble-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.22em;
-      color: #252525;
-      margin-bottom: 5px;
+      font-size:9px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.25em;
+      color:var(--dim); margin-bottom:6px;
     }
 
     #scramble-text {
-      font-size: 10px;
-      color: #2e2e2e;
-      line-height: 1.8;
-      letter-spacing: 0.04em;
-      word-break: break-all;
+      font-family:'Orbitron', monospace;
+      font-size:9px; font-weight:400;
+      color:#3a3a6a; line-height:2;
+      letter-spacing:0.06em; word-break:break-all;
     }
 
     #new-scramble-btn {
-      margin-top: 7px;
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--dim);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-family: 'Azeret Mono', monospace;
-      padding: 4px 10px;
-      border-radius: 6px;
-      cursor: pointer;
+      margin-top:8px;
+      background:none;
+      border:1px solid var(--border);
+      color:var(--dim);
+      font-size:10px; font-weight:600;
+      letter-spacing:0.15em; text-transform:uppercase;
+      font-family:'Exo 2', sans-serif;
+      padding:5px 12px; border-radius:20px;
+      cursor:pointer;
+      transition:border-color 0.2s, color 0.2s;
     }
 
-    /* Timer */
+    #new-scramble-btn:active {
+      border-color:var(--cyan); color:var(--cyan);
+    }
+
+    /* ── TIMER ── */
     #timer-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      display:flex; flex-direction:column;
+      align-items:center; gap:10px;
     }
 
     #time-display {
-      font-family: 'Space Mono', monospace;
-      font-size: clamp(40px, 6.5vw, 68px);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      transition: color 0.15s ease;
-      line-height: 1;
-      white-space: nowrap;
+      font-family:'Orbitron', monospace;
+      font-size:clamp(44px, 6.8vw, 70px);
+      font-weight:900;
+      letter-spacing:0.02em;
+      color:var(--text);
+      text-shadow:0 0 30px rgba(232,232,255,0.15);
+      transition:color 0.15s, text-shadow 0.15s;
+      line-height:1;
+      white-space:nowrap;
     }
 
-    #time-display.ready   { color: var(--green); }
-    #time-display.holding { color: var(--yellow); }
+    #time-display.holding {
+      color:var(--yellow);
+      text-shadow:0 0 30px rgba(255,234,0,0.4);
+    }
+    #time-display.ready {
+      color:var(--green);
+      text-shadow:0 0 40px rgba(0,230,118,0.5);
+    }
+    #time-display.running {
+      color:var(--text);
+      text-shadow:0 0 20px rgba(0,229,255,0.2);
+    }
 
     #status-msg {
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--dim);
-      text-align: center;
-      transition: color 0.2s;
-      line-height: 1.4;
+      font-size:10px; font-weight:600;
+      letter-spacing:0.18em; text-transform:uppercase;
+      color:var(--dim); text-align:center;
+      transition:color 0.2s;
+      line-height:1.4;
     }
-    #status-msg.green { color: var(--green); }
+    #status-msg.green   { color:var(--green); }
+    #status-msg.running { color:var(--cyan); }
+    #status-msg.orange  { color:var(--orange); }
+    #status-msg.red     { color:var(--red); }
 
-    /* Bottom stats */
-    #bottom-bar {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
+    /* ── INSPECTION BAR ── */
+    #inspection-wrap {
+      width:100%;
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+    }
+    #inspection-wrap.active { display:flex; }
+
+    #inspection-label {
+      font-size:9px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.22em;
+      color:var(--dim);
     }
 
-    #stats-row {
-      font-size: 10px;
-      color: var(--dim);
-      letter-spacing: 0.05em;
-      display: flex;
-      gap: 12px;
+    #inspection-countdown {
+      font-family:'Orbitron', monospace;
+      font-size:28px; font-weight:900;
+      color:var(--yellow);
+      text-shadow:0 0 20px rgba(255,234,0,0.5);
+      transition:color 0.3s, text-shadow 0.3s;
+      line-height:1;
     }
-    #stats-row span { color: var(--text); font-weight: 700; }
+    #inspection-countdown.danger {
+      color:var(--red);
+      text-shadow:0 0 25px rgba(255,23,68,0.6);
+    }
+    #inspection-countdown.penalty {
+      color:var(--pink);
+      text-shadow:0 0 25px rgba(245,0,87,0.6);
+    }
+
+    #inspection-bar-track {
+      width:90%; height:4px;
+      background:var(--border); border-radius:2px;
+      overflow:hidden;
+    }
+    #inspection-bar-fill {
+      height:100%; border-radius:2px;
+      background:var(--yellow);
+      transition:background 0.3s;
+      transform-origin:left;
+    }
+
+    /* ── STATS ── */
+    #stats-wrap { width:100%; }
+
+    .stat-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:7px 10px;
+      border-radius:10px;
+      background:var(--surface);
+      margin-bottom:6px;
+    }
+
+    .stat-left { display:flex; flex-direction:column; }
+
+    .stat-name {
+      font-size:12px; font-weight:700;
+      color:var(--text); letter-spacing:0.05em;
+    }
+
+    .stat-desc {
+      font-size:9px; font-weight:400;
+      color:var(--dim); letter-spacing:0.05em;
+      margin-top:1px;
+    }
+
+    .stat-val {
+      font-family:'Orbitron', monospace;
+      font-size:15px; font-weight:700;
+      color:var(--cyan); letter-spacing:0.02em;
+    }
 
     #history-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--dim);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-family: 'Azeret Mono', monospace;
-      padding: 5px 14px;
-      border-radius: 6px;
-      cursor: pointer;
+      width:100%;
+      padding:9px;
+      background:linear-gradient(135deg, rgba(0,229,255,0.08), rgba(255,109,0,0.08));
+      border:1px solid var(--border);
+      color:var(--text);
+      font-size:11px; font-weight:700;
+      letter-spacing:0.15em; text-transform:uppercase;
+      font-family:'Exo 2', sans-serif;
+      border-radius:10px; cursor:pointer;
+      transition:background 0.2s, border-color 0.2s;
+    }
+
+    #history-toggle:active {
+      background:linear-gradient(135deg, rgba(0,229,255,0.15), rgba(255,109,0,0.15));
+      border-color:var(--cyan);
     }
 
     /* ── HISTORY OVERLAY ── */
     #history-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.88);
-      backdrop-filter: blur(10px);
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s;
+      position:fixed; inset:0;
+      background:rgba(5,5,20,0.92);
+      backdrop-filter:blur(14px);
+      z-index:50;
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none;
+      transition:opacity 0.25s;
     }
-    #history-overlay.open { opacity: 1; pointer-events: all; }
+    #history-overlay.open { opacity:1; pointer-events:all; }
 
     #history-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      width: min(400px, 88vw);
-      max-height: 78dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:20px;
+      width:min(420px, 90vw);
+      max-height:80dvh;
+      display:flex; flex-direction:column;
+      overflow:hidden;
+      box-shadow:0 0 60px rgba(0,229,255,0.08);
     }
 
     #history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      display:flex; justify-content:space-between; align-items:center;
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      flex-shrink:0;
     }
 
     #history-header h2 {
-      font-size: 11px; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--dim); font-weight: 400;
+      font-size:13px; font-weight:700;
+      letter-spacing:0.2em; text-transform:uppercase;
+      color:var(--text);
     }
 
-    #history-actions { display: flex; gap: 14px; }
+    #history-actions { display:flex; gap:14px; }
+
     #history-actions button {
-      background: none; border: none;
-      font-family: 'Azeret Mono', monospace;
-      font-size: 11px; letter-spacing: 0.1em;
-      text-transform: uppercase; cursor: pointer;
+      background:none; border:none;
+      font-family:'Exo 2', sans-serif;
+      font-size:11px; font-weight:700;
+      letter-spacing:0.12em; text-transform:uppercase;
+      cursor:pointer;
     }
-    #clear-btn { color: var(--red); }
-    #close-btn { color: var(--dim); }
+
+    #clear-btn { color:var(--red); }
+    #close-btn { color:var(--dim); }
 
     #history-list {
-      overflow-y: auto; flex: 1;
-      padding: 4px 0;
-      -webkit-overflow-scrolling: touch;
+      overflow-y:auto; flex:1;
+      padding:4px 0;
+      -webkit-overflow-scrolling:touch;
     }
 
     .history-item {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 10px 18px;
-      border-bottom: 1px solid #161616;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:11px 20px;
+      border-bottom:1px solid #1a1a30;
     }
-    .history-item:last-child { border-bottom: none; }
+    .history-item:last-child { border-bottom:none; }
 
-    .h-index { font-size: 10px; color: #333; width: 22px; }
-    .h-time { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); }
-    .h-time.best  { color: var(--green); }
-    .h-time.worst { color: var(--red); }
-    .h-diff { font-size: 10px; color: var(--dim); width: 54px; text-align: right; }
-    .h-diff.pos { color: var(--red); }
-    .h-diff.neg { color: var(--green); }
+    .h-index { font-size:11px; color:#2a2a50; width:24px; font-weight:600; }
 
-    #empty-state { text-align: center; color: #2a2a2a; font-size: 12px; letter-spacing: 0.1em; padding: 30px 0; }
+    .h-time {
+      font-family:'Orbitron', monospace;
+      font-size:22px; font-weight:700; color:var(--text);
+    }
+    .h-time.best  { color:var(--green); text-shadow:0 0 12px rgba(0,230,118,0.4); }
+    .h-time.worst { color:var(--red); }
+
+    .h-diff { font-size:11px; font-weight:600; color:var(--dim); width:56px; text-align:right; }
+    .h-diff.pos { color:var(--red); }
+    .h-diff.neg { color:var(--green); }
+
+    #empty-state {
+      text-align:center; color:#2a2a50;
+      font-size:12px; letter-spacing:0.1em;
+      padding:36px 0;
+    }
 
     /* ── PORTRAIT HINT ── */
     #portrait-hint {
-      display: none;
-      position: fixed; inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      align-items: center; justify-content: center;
-      flex-direction: column; gap: 14px;
-      font-size: 13px; letter-spacing: 0.1em;
-      color: var(--dim); text-align: center;
+      display:none;
+      position:fixed; inset:0;
+      background:var(--bg); z-index:100;
+      align-items:center; justify-content:center;
+      flex-direction:column; gap:16px;
+      text-align:center;
     }
-    #portrait-hint .icon { font-size: 44px; }
 
-    @media (orientation: portrait) {
-      #portrait-hint { display: flex; }
+    #portrait-hint .icon { font-size:50px; }
+
+    #portrait-hint .title {
+      font-family:'Orbitron', monospace;
+      font-size:14px; font-weight:700;
+      color:var(--cyan); letter-spacing:0.1em;
     }
+
+    #portrait-hint .sub {
+      font-size:11px; color:var(--dim);
+      letter-spacing:0.15em; text-transform:uppercase;
+    }
+
+    @media (orientation:portrait) {
+      #portrait-hint { display:flex; }
+    }
+
+    /* last solve flash animation */
+    @keyframes flashGreen {
+      0%   { text-shadow:0 0 60px rgba(0,230,118,0.9); }
+      100% { text-shadow:0 0 20px rgba(232,232,255,0.15); }
+    }
+    #time-display.flash { animation:flashGreen 1.2s ease-out forwards; }
   </style>
 </head>
 <body>
 
 <div id="portrait-hint">
   <div class="icon">↻</div>
-  <div>Bitte Handy drehen</div>
-  <div style="font-size:10px;color:#333;letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;">Querformat für den Timer</div>
+  <div class="title">Handy drehen</div>
+  <div class="sub">Querformat für den Timer</div>
 </div>
 
 <div id="app">
@@ -322,62 +453,102 @@
   <div class="pad" id="pad-left">
     <div class="pad-icon">🤚</div>
     <div class="pad-label">Linke Hand</div>
+    <div class="pad-hint">hier drauflegen</div>
   </div>
 
   <div id="center">
+
     <div id="scramble-wrap">
       <div id="scramble-label">Scramble</div>
       <div id="scramble-text"></div>
-      <button id="new-scramble-btn">↻ Neu</button>
+      <button id="new-scramble-btn">↻ Neuer Scramble</button>
     </div>
 
     <div id="timer-wrap">
+      <!-- Inspection countdown -->
+      <div id="inspection-wrap">
+        <div id="inspection-label">🔍 Inspection</div>
+        <div id="inspection-countdown">15</div>
+        <div id="inspection-bar-track">
+          <div id="inspection-bar-fill" style="width:100%"></div>
+        </div>
+      </div>
+
       <div id="time-display">0.00</div>
-      <div id="status-msg">Hände auf die Pads</div>
+      <div id="status-msg">Hände auf die Pads legen</div>
     </div>
 
-    <div id="bottom-bar">
-      <div id="stats-row">ao5 <span id="ao5-val">—</span> &nbsp; ao12 <span id="ao12-val">—</span></div>
-      <button id="history-toggle">Zeiten ▾</button>
+    <div>
+      <div id="stats-wrap">
+        <div class="stat-row">
+          <div class="stat-left">
+            <span class="stat-name">Ø 5er Schnitt</span>
+            <span class="stat-desc">Beste &amp; schlechteste gestrichen</span>
+          </div>
+          <span class="stat-val" id="ao5-val">—</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat-left">
+            <span class="stat-name">Ø 12er Schnitt</span>
+            <span class="stat-desc">Beste &amp; schlechteste gestrichen</span>
+          </div>
+          <span class="stat-val" id="ao12-val">—</span>
+        </div>
+      </div>
+      <button id="history-toggle">Alle Zeiten ansehen ▾</button>
     </div>
+
   </div>
 
   <div class="pad" id="pad-right">
     <div class="pad-icon">🤚</div>
     <div class="pad-label">Rechte Hand</div>
+    <div class="pad-hint">hier drauflegen</div>
   </div>
 
 </div>
 
+<!-- History Overlay -->
 <div id="history-overlay">
   <div id="history-box">
     <div id="history-header">
-      <h2>Zeiten</h2>
+      <h2>⏱ Zeiten</h2>
       <div id="history-actions">
         <button id="clear-btn">Löschen</button>
-        <button id="close-btn">Schließen</button>
+        <button id="close-btn">Schließen ✕</button>
       </div>
     </div>
-    <div id="history-list"><div id="empty-state">Noch keine Zeiten</div></div>
+    <div id="history-list">
+      <div id="empty-state">Noch keine Zeiten gespeichert</div>
+    </div>
   </div>
 </div>
 
 <script>
+// ── SCRAMBLE ──────────────────────────────────────
 const MOVES=['U','D','R','L','F','B'],MODS=['','\'','2'],OPOS={U:'D',D:'U',R:'L',L:'R',F:'B',B:'F'};
 function genScramble(len=20){const s=[];let l='',sl='';for(let i=0;i<len;i++){let m;do{m=MOVES[Math.floor(Math.random()*6)];}while(m===l||(m===OPOS[sl]&&OPOS[m]===sl));sl=l;l=m;s.push(m+MODS[Math.floor(Math.random()*3)]);}return s.join(' ');}
 
+// ── STATE ─────────────────────────────────────────
 let times=JSON.parse(localStorage.getItem('ct-times')||'[]');
-let startTs=0,rafId=null,state='idle',holdTimer=null,leftDown=false,rightDown=false;
-const HOLD_MS=500;
+let startTs=0,rafId=null,inspRafId=null,state='idle',holdTimer=null,leftDown=false,rightDown=false;
+let penalty=0; // 0 = none, 2 = +2sec, -1 = DNF
+const HOLD_MS=500, INSPECTION_MS=15000;
 
+// ── DOM ───────────────────────────────────────────
 const display=document.getElementById('time-display'),statusMsg=document.getElementById('status-msg');
 const padL=document.getElementById('pad-left'),padR=document.getElementById('pad-right');
+const centerEl=document.getElementById('center');
 const scrambleEl=document.getElementById('scramble-text');
 const ao5El=document.getElementById('ao5-val'),ao12El=document.getElementById('ao12-val');
 const histList=document.getElementById('history-list'),histOverlay=document.getElementById('history-overlay');
 const histToggle=document.getElementById('history-toggle'),clearBtn=document.getElementById('clear-btn'),closeBtn=document.getElementById('close-btn');
 const newScrambleBtn=document.getElementById('new-scramble-btn');
+const inspWrap=document.getElementById('inspection-wrap');
+const inspCountdown=document.getElementById('inspection-countdown');
+const inspBarFill=document.getElementById('inspection-bar-fill');
 
+// ── HELPERS ───────────────────────────────────────
 function fmtTime(ms){if(ms<60000)return(ms/1000).toFixed(2);const m=Math.floor(ms/60000),s=((ms%60000)/1000).toFixed(2).padStart(5,'0');return`${m}:${s}`;}
 function setDisplay(ms,cls=''){display.textContent=fmtTime(ms);display.className=cls;}
 function tick(){setDisplay(Date.now()-startTs,'running');rafId=requestAnimationFrame(tick);}
@@ -386,50 +557,157 @@ function newScrambleFn(){scrambleEl.textContent=genScramble();}
 newScrambleFn();
 newScrambleBtn.addEventListener('click',e=>{e.stopPropagation();newScrambleFn();});
 
+// ── INSPECTION ────────────────────────────────────
+let inspStartTs=0;
+
+function startInspection(){
+  state='inspection'; penalty=0;
+  inspStartTs=Date.now();
+  inspWrap.classList.add('active');
+  padL.className='pad'; padR.className='pad';
+  display.textContent='15';
+  display.className='holding';
+  statusMsg.textContent='Würfel anschauen – dann Pads berühren';
+  statusMsg.className='orange';
+  tickInspection();
+}
+
+function tickInspection(){
+  const elapsed=Date.now()-inspStartTs;
+  const remaining=INSPECTION_MS-elapsed;
+  const secs=Math.ceil(remaining/1000);
+
+  if(elapsed>=17000){
+    // DNF
+    penalty=-1;
+    inspCountdown.textContent='DNF';
+    inspCountdown.className='penalty';
+    inspBarFill.style.width='0%';
+    inspBarFill.style.background='var(--pink)';
+    statusMsg.textContent='DNF – zu spät!';
+    statusMsg.className='red';
+    stopInspectionAnim();
+    // auto-reset after 2s
+    setTimeout(resetToIdle,2000);
+    return;
+  }
+
+  if(elapsed>=15000){
+    // +2 penalty zone
+    penalty=2;
+    inspCountdown.textContent='+2';
+    inspCountdown.className='danger';
+    inspBarFill.style.width='0%';
+    inspBarFill.style.background='var(--red)';
+    statusMsg.textContent='+2 Strafe! Sofort loslegen!';
+    statusMsg.className='red';
+  } else {
+    const pct=Math.max(0,(remaining/INSPECTION_MS)*100);
+    inspCountdown.textContent=Math.max(1,secs);
+    inspCountdown.className=secs<=5?'danger':'';
+    inspBarFill.style.width=pct+'%';
+    inspBarFill.style.background=secs<=5?'var(--red)':secs<=8?'var(--orange)':'var(--yellow)';
+  }
+
+  inspRafId=requestAnimationFrame(tickInspection);
+}
+
+function stopInspectionAnim(){
+  if(inspRafId){cancelAnimationFrame(inspRafId);inspRafId=null;}
+}
+
+function hideInspection(){
+  inspWrap.classList.remove('active');
+  inspCountdown.className='';
+  inspBarFill.style.width='100%';
+  inspBarFill.style.background='var(--yellow)';
+}
+
+// ── TIMER LOGIC ───────────────────────────────────
 function bothDown(){return leftDown&&rightDown;}
+
+function resetToIdle(){
+  stopInspectionAnim();hideInspection();
+  state='idle';penalty=0;
+  padL.className='pad';padR.className='pad';
+  setDisplay(times.length>0?times[0].ms:0);
+  statusMsg.textContent='Hände auf die Pads legen';statusMsg.className='';
+}
 
 function onBothDown(){
   if(state==='running'){stopTimer();return;}
+
+  // During inspection: hands back on = arm the solve
+  if(state==='inspection'){
+    state='solve_holding';
+    padL.className='pad ready';padR.className='pad ready';
+    display.className='ready';
+    statusMsg.textContent='Hände hoch → Solve startet!';
+    statusMsg.className='green';
+    return;
+  }
+
   if(state==='idle'){
     state='holding';
     padL.className='pad active';padR.className='pad active';
-    setDisplay(0,'holding');statusMsg.textContent='Halten…';statusMsg.className='';
+    setDisplay(0,'holding');
+    statusMsg.textContent='Halten…';statusMsg.className='';
     holdTimer=setTimeout(()=>{
       if(bothDown()&&state==='holding'){
-        state='ready';padL.className='pad ready';padR.className='pad ready';
-        display.className='ready';statusMsg.textContent='Los! Hände hoch!';statusMsg.className='green';
+        state='ready';
+        padL.className='pad ready';padR.className='pad ready';
+        display.className='ready';
+        statusMsg.textContent='Hände hoch → Inspection startet!';
+        statusMsg.className='green';
       }
     },HOLD_MS);
   }
 }
 
 function onAnyUp(){
-  if(state==='ready'&&!bothDown()){startTimer();return;}
+  // From ready (pre-inspection) → start inspection
+  if(state==='ready'&&!bothDown()){startInspection();return;}
+
+  // From solve_holding → start solve timer
+  if(state==='solve_holding'&&!bothDown()){
+    stopInspectionAnim();hideInspection();
+    startTimer();return;
+  }
+
   if(state==='holding'){
     clearTimeout(holdTimer);state='idle';
     padL.className='pad';padR.className='pad';
     setDisplay(times.length>0?times[0].ms:0);
-    statusMsg.textContent='Hände auf die Pads';statusMsg.className='';
+    statusMsg.textContent='Hände auf die Pads legen';statusMsg.className='';
   }
 }
 
 function startTimer(){
   state='running';startTs=Date.now();
   padL.className='pad';padR.className='pad';
-  statusMsg.textContent='Tippen zum Stoppen';statusMsg.className='';
+  statusMsg.textContent='Lösen – Pads berühren zum Stoppen';
+  statusMsg.className='running';
   rafId=requestAnimationFrame(tick);
 }
 
 function stopTimer(){
   cancelAnimationFrame(rafId);
-  const elapsed=Date.now()-startTs;
+  let elapsed=Date.now()-startTs;
   state='idle';padL.className='pad';padR.className='pad';
-  setDisplay(elapsed);statusMsg.textContent='Hände auf die Pads';statusMsg.className='';
-  times.unshift({ms:elapsed,scramble:scrambleEl.textContent,ts:Date.now()});
+
+  let displayTime=elapsed;
+  let penaltyLabel='';
+  if(penalty===2){displayTime+=2000;penaltyLabel=' (+2)';}
+
+  setDisplay(displayTime,'flash');
+  statusMsg.textContent='Hände auf die Pads legen';statusMsg.className='';
+  times.unshift({ms:displayTime,penalty:penaltyLabel,scramble:scrambleEl.textContent,ts:Date.now()});
   localStorage.setItem('ct-times',JSON.stringify(times));
+  penalty=0;
   renderHistory();updateStats();newScrambleFn();
 }
 
+// ── TOUCH HANDLING ────────────────────────────────
 const touchIds={left:new Set(),right:new Set()};
 
 function getZone(touch){
@@ -437,10 +715,7 @@ function getZone(touch){
   return touch.clientX<=r.right?'left':'right';
 }
 
-const centerEl=document.getElementById('center');
-
 document.addEventListener('touchstart',e=>{
-  // If touch is inside center panel or history overlay → let buttons work normally
   if(centerEl.contains(e.target)||histOverlay.contains(e.target)) return;
   e.preventDefault();
   Array.from(e.changedTouches).forEach(t=>touchIds[getZone(t)].add(t.identifier));
@@ -463,6 +738,7 @@ document.addEventListener('touchcancel',e=>{
   leftDown=rightDown=false;onAnyUp();
 },{passive:false});
 
+// ── STATS ─────────────────────────────────────────
 function avg(arr){if(!arr.length)return null;const s=[...arr].sort((a,b)=>a-b);const t=arr.length>=5?s.slice(1,-1):s;return t.reduce((x,v)=>x+v,0)/t.length;}
 
 function updateStats(){
@@ -471,14 +747,16 @@ function updateStats(){
   ao12El.textContent=ms.length>=12?fmtTime(avg(ms.slice(0,12))):'—';
 }
 
+// ── HISTORY ───────────────────────────────────────
 function renderHistory(){
-  if(!times.length){histList.innerHTML='<div id="empty-state">Noch keine Zeiten</div>';return;}
+  if(!times.length){histList.innerHTML='<div id="empty-state">Noch keine Zeiten gespeichert</div>';return;}
   const best=Math.min(...times.map(t=>t.ms)),worst=Math.max(...times.map(t=>t.ms));
   const mean=times.reduce((s,t)=>s+t.ms,0)/times.length;
   histList.innerHTML=times.map((t,i)=>{
     const diff=t.ms-mean,ds=(diff>=0?'+':'')+(diff/1000).toFixed(2);
-    const dc=diff>0?'pos':'neg',tc=(t.ms===best&&times.length>1)?'best':(t.ms===worst&&times.length>1)?'worst':'';
-    return`<div class="history-item"><span class="h-index">${times.length-i}</span><span class="h-time ${tc}">${fmtTime(t.ms)}</span><span class="h-diff ${dc}">${ds}</span></div>`;
+    const dc=diff>0?'pos':'neg';
+    const tc=(t.ms===best&&times.length>1)?'best':(t.ms===worst&&times.length>1)?'worst':'';
+    return`<div class="history-item"><span class="h-index">${times.length-i}</span><span class="h-time ${tc}">${fmtTime(t.ms)}${t.penalty||''}</span><span class="h-diff ${dc}">${ds}</span></div>`;
   }).join('');
 }
 
@@ -487,10 +765,12 @@ closeBtn.addEventListener('click',e=>{e.stopPropagation();histOverlay.classList.
 clearBtn.addEventListener('click',e=>{
   e.stopPropagation();
   if(confirm('Alle Zeiten löschen?')){
-    times=[];localStorage.removeItem('ct-times');renderHistory();updateStats();setDisplay(0);
+    times=[];localStorage.removeItem('ct-times');
+    renderHistory();updateStats();setDisplay(0);
   }
 });
 
+// ── INIT ──────────────────────────────────────────
 renderHistory();updateStats();
 if(times.length>0)setDisplay(times[0].ms);
 
