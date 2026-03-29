@@ -399,6 +399,15 @@
     .h-diff.pos { color:var(--red); }
     .h-diff.neg { color:var(--green); }
 
+    .h-delete {
+      background:none; border:none;
+      color:#2a2a50; font-size:16px;
+      cursor:pointer; padding:0 0 0 10px;
+      line-height:1; transition:color 0.15s;
+      flex-shrink:0;
+    }
+    .h-delete:active { color:var(--red); }
+
     #empty-state {
       text-align:center; color:#2a2a50;
       font-size:12px; letter-spacing:0.1em;
@@ -756,8 +765,25 @@ function renderHistory(){
     const diff=t.ms-mean,ds=(diff>=0?'+':'')+(diff/1000).toFixed(2);
     const dc=diff>0?'pos':'neg';
     const tc=(t.ms===best&&times.length>1)?'best':(t.ms===worst&&times.length>1)?'worst':'';
-    return`<div class="history-item"><span class="h-index">${times.length-i}</span><span class="h-time ${tc}">${fmtTime(t.ms)}${t.penalty||''}</span><span class="h-diff ${dc}">${ds}</span></div>`;
+    return`<div class="history-item" data-index="${i}">
+      <span class="h-index">${times.length-i}</span>
+      <span class="h-time ${tc}">${fmtTime(t.ms)}${t.penalty||''}</span>
+      <span class="h-diff ${dc}">${ds}</span>
+      <button class="h-delete" data-index="${i}" title="Löschen">✕</button>
+    </div>`;
   }).join('');
+
+  // attach delete listeners
+  histList.querySelectorAll('.h-delete').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const idx=parseInt(btn.getAttribute('data-index'));
+      times.splice(idx,1);
+      localStorage.setItem('ct-times',JSON.stringify(times));
+      renderHistory(); updateStats();
+      if(times.length===0) setDisplay(0);
+    });
+  });
 }
 
 histToggle.addEventListener('click',e=>{e.stopPropagation();histOverlay.classList.add('open');});
