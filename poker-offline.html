@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Poker Night">
+<meta name="theme-color" content="#0d2218">
+<link rel="manifest" href="poker-manifest.json">
+<title>Poker Night</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #1a3a2a;
+    background-image: radial-gradient(ellipse at 50% 0%, #1f4533 0%, #0d2218 100%),
+      repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(201,168,76,0.025) 12px, rgba(201,168,76,0.025) 24px);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; letter-spacing: 0.12em; color: #e8c97a; text-align: center; margin-bottom: 4px; text-shadow: 0 0 30px rgba(232,201,122,0.35); }
+  .suits { font-size: 1rem; letter-spacing: 0.6em; opacity: 0.3; color: #fff; text-align: center; margin-bottom: 14px; }
+  .save-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; width: 100%; max-width: 460px; flex-wrap: wrap; }
+  .save-status { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; color: rgba(232,201,122,0.45); flex: 1; min-width: 120px; }
+  .save-status.saved { color: #52be80; }
+  .save-status.saving { color: #e8c97a; }
+  .save-status.error { color: #e74c3c; }
+  .save-status.live { color: #5dade2; }
+  .icon-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(232,201,122,0.2); border-radius: 10px; padding: 7px 14px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.78rem; color: rgba(232,201,122,0.7); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .icon-btn:hover { background: rgba(232,201,122,0.1); border-color: #e8c97a; color: #e8c97a; }
+  .player-count-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; width: 100%; max-width: 460px; background: rgba(10,25,15,0.6); border: 1.5px solid rgba(232,201,122,0.2); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap; }
+  .player-count-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(232,201,122,0.6); }
+  .count-btns { display: flex; gap: 6px; margin-left: auto; }
+  .count-btn { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(232,201,122,0.3); background: transparent; color: rgba(232,201,122,0.7); font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+  .count-btn:hover { background: rgba(232,201,122,0.15); border-color: #e8c97a; color: #e8c97a; }
+  .count-btn.active { background: #e8c97a; border-color: #e8c97a; color: #0d2218; }
+  .round-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .round-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.12em; color: rgba(232,201,122,0.55); }
+  .next-btn { background: #e8c97a; border: none; border-radius: 20px; padding: 8px 22px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.85rem; color: #0d2218; cursor: pointer; transition: background 0.15s, transform 0.1s; letter-spacing: 0.04em; }
+  .next-btn:active { transform: scale(0.96); }
+  .next-btn:hover { background: #f5da8e; }
+  .pot-box { width: 100%; max-width: 460px; margin-bottom: 18px; background: rgba(10,25,15,0.8); border: 2px solid rgba(232,201,122,0.35); border-radius: 16px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .pot-top { display: flex; justify-content: space-between; align-items: center; }
+  .pot-label { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(232,201,122,0.55); }
+  .pot-amount { font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem; color: #e8c97a; line-height: 1; text-shadow: 0 0 20px rgba(232,201,122,0.4); }
+  .pot-unit { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.4; color: #f0ead0; }
+  .pot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pot-add-row { display: flex; gap: 8px; align-items: center; }
+  .pot-input { background: rgba(0,0,0,0.3); border: 1.5px solid rgba(232,201,122,0.25); color: #f0ead0; font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 700; padding: 7px 12px; border-radius: 8px; outline: none; width: 90px; text-align: center; }
+  .pot-input:focus { border-color: #e8c97a; }
+  .pot-btn { background: rgba(232,201,122,0.12); border: 1.5px solid rgba(232,201,122,0.3); color: #e8c97a; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.8rem; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .pot-btn:hover { background: rgba(232,201,122,0.22); }
+  .pot-btn.win-btn { background: rgba(46,204,113,0.15); border-color: rgba(46,204,113,0.4); color: #2ecc71; }
+  .pot-btn.win-btn:hover { background: rgba(46,204,113,0.28); }
+  .pot-btn.reset-btn { background: rgba(192,57,43,0.12); border-color: rgba(192,57,43,0.3); color: #e74c3c; }
+  .pot-btn.reset-btn:hover { background: rgba(192,57,43,0.22); }
+  .blind-info { font-size: 0.72rem; color: rgba(240,234,208,0.35); font-weight: 700; }
+  .blind-info span { color: rgba(232,201,122,0.6); }
+  .blind-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .blind-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: rgba(240,234,208,0.4); white-space: nowrap; }
+  .blind-input { background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.1); color: #f0ead0; font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; outline: none; width: 65px; text-align: center; }
+  .blind-input:focus { border-color: #e8c97a; }
+  .players { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 460px; }
+  .card { background: rgba(15,30,22,0.75); border-radius: 16px; padding: 18px 20px; border: 2px solid rgba(255,255,255,0.07); transition: border-color 0.2s; }
+  .card.leader { border-color: #e8c97a; box-shadow: 0 0 20px rgba(232,201,122,0.12); }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 10px; }
+  .name-role-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .player-name { font-size: 1.25rem; font-weight: 800; color: #f0ead0; cursor: pointer; border-bottom: 2px dashed rgba(240,234,208,0.2); padding-bottom: 2px; transition: color 0.15s; display: inline-block; }
+  .player-name:hover { color: #e8c97a; }
+  .role-badges { display: flex; gap: 6px; flex-wrap: wrap; min-height: 22px; }
+  .badge { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; }
+  .badge-dealer { background: rgba(232,201,122,0.18); color: #e8c97a; border: 1px solid rgba(232,201,122,0.4); }
+  .badge-sb { background: rgba(52,152,219,0.2); color: #5dade2; border: 1px solid rgba(52,152,219,0.4); }
+  .badge-bb { background: rgba(231,76,60,0.2); color: #f1948a; border: 1px solid rgba(231,76,60,0.4); }
+  .chip-count-wrap { display: flex; align-items: baseline; gap: 5px; flex-shrink: 0; }
+  .chip-count { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; line-height: 1; letter-spacing: 0.05em; color: #e8c97a; }
+  .chip-unit { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.45; color: #f0ead0; }
+  .chips-row { display: flex; gap: 10px; justify-content: space-between; }
+  .chip-btn { flex: 1; aspect-ratio: 1; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: 0.05em; color: #fff; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); background-image: repeating-conic-gradient(rgba(255,255,255,0.08) 0deg 15deg, transparent 15deg 30deg); }
+  .chip-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+  .chip-btn.c5  { background-color: #2471a3; }
+  .chip-btn.c10 { background-color: #d4ac0d; }
+  .chip-btn.c25 { background-color: #27ae60; }
+  .chip-btn.c50 { background-color: #ca6f1e; border: 3px solid #e59866; }
+  .chip-inner { width: 60%; height: 60%; border-radius: 50%; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.2); }
+  .dir-toggle { display: flex; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; margin-bottom: 12px; width: 100%; }
+  .dir-btn { flex: 1; padding: 7px 0; border: none; background: transparent; color: rgba(240,234,208,0.4); font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .dir-btn.active { background: rgba(232,201,122,0.15); color: #e8c97a; border-radius: 8px; }
+  .undo-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .undo-btn { background: transparent; border: none; color: rgba(240,234,208,0.3); font-family: 'Nunito', sans-serif; font-size: 0.75rem; cursor: pointer; padding: 4px 0; transition: color 0.15s; }
+  .undo-btn:hover { color: rgba(240,234,208,0.7); }
+  .footer-bar { margin-top: 28px; width: 100%; max-width: 460px; display: flex; gap: 10px; }
+  .footer-btn { flex: 1; padding: 12px 0; border-radius: 12px; border: 2px solid rgba(232,201,122,0.25); background: transparent; color: rgba(232,201,122,0.7); font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+  .footer-btn:hover { background: rgba(232,201,122,0.1); border-color: #e8c97a; color: #e8c97a; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .overlay.on { opacity: 1; pointer-events: all; }
+  .modal { background: #132e1e; border-radius: 18px; padding: 28px 24px; width: min(360px, 92vw); border: 2px solid rgba(232,201,122,0.3); }
+  .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.1em; color: #e8c97a; margin-bottom: 6px; }
+  .modal .pot-preview { font-size: 0.8rem; color: rgba(240,234,208,0.45); font-weight: 700; margin-bottom: 18px; }
+  .modal input { width: 100%; background: rgba(0,0,0,0.3); border: 2px solid rgba(232,201,122,0.25); border-radius: 10px; color: #f0ead0; font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 700; padding: 12px 14px; outline: none; margin-bottom: 16px; }
+  .modal input:focus { border-color: #e8c97a; }
+  .winner-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .winner-option { padding: 12px 16px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-weight: 700; font-size: 1rem; color: #f0ead0; transition: all 0.15s; display: flex; justify-content: space-between; align-items: center; }
+  .winner-option:hover { border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.08); }
+  .winner-chips { font-size: 0.8rem; opacity: 0.5; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns button { flex: 1; padding: 11px 0; border-radius: 10px; border: 2px solid transparent; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.9rem; cursor: pointer; }
+  .btn-cancel { background: transparent; border-color: rgba(240,234,208,0.15) !important; color: rgba(240,234,208,0.5); }
+  .btn-ok { background: #e8c97a; color: #0d2218; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: #132e1e; border: 1.5px solid rgba(232,201,122,0.3); color: #f0ead0; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 10px 22px; border-radius: 30px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+  .pop { animation: pop 0.25s ease; }
+</style>
+</head>
+<body>
+
+<h1>POKER NIGHT</h1>
+<div class="suits">♠ ♥ ♦ ♣</div>
+
+<div class="save-bar">
+  <span class="save-status" id="saveStatus">Verbinde…</span>
+  <button class="icon-btn" onclick="manualSave()">💾 Speichern</button>
+</div>
+
+<div class="player-count-bar">
+  <span class="player-count-label">Spieler</span>
+  <div class="count-btns" id="countBtns"></div>
+</div>
+
+<div class="round-bar">
+  <span class="round-num" id="roundLabel">RUNDE 1</span>
+  <button class="next-btn" onclick="nextRound()">Nächste Runde ▶</button>
+</div>
+
+<div class="pot-box">
+  <div class="pot-top">
+    <div>
+      <div class="pot-label">🏆 Pott</div>
+      <div class="blind-info" id="blindInfo"></div>
+    </div>
+    <div style="text-align:right">
+      <div class="pot-amount" id="potAmount">0</div>
+      <div class="pot-unit">Chips</div>
+    </div>
+  </div>
+  <div class="blind-row">
+    <span class="blind-lbl">Small Blind:</span>
+    <input class="blind-input" id="sbInput" type="number" min="1" value="10" onchange="saveState();renderPot()">
+    <span class="blind-lbl">Big Blind:</span>
+    <input class="blind-input" id="bbInput" type="number" min="1" value="20" onchange="saveState();renderPot()">
+  </div>
+  <div class="pot-actions">
+    <div class="pot-add-row">
+      <input class="pot-input" id="potAddInput" type="number" min="1" placeholder="Chips">
+      <button class="pot-btn" onclick="addToPot()">+ zum Pott</button>
+    </div>
+    <button class="pot-btn win-btn" onclick="openWinnerModal()">🏆 Gewinner</button>
+    <button class="pot-btn reset-btn" onclick="resetPot()">✕ Pott leeren</button>
+  </div>
+</div>
+
+<div class="players" id="players"></div>
+
+<div class="footer-bar">
+  <button class="footer-btn" onclick="newGame()">🃏 Neues Spiel</button>
+  <button class="footer-btn" onclick="resetAll()">↺ Zurücksetzen</button>
+</div>
+
+<div class="overlay" id="nameOverlay">
+  <div class="modal">
+    <h3>Name ändern</h3>
+    <input type="text" id="nameInput" maxlength="20" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeNameModal()">Abbrechen</button>
+      <button class="btn-ok" onclick="saveName()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="winnerOverlay">
+  <div class="modal">
+    <h3>🏆 Gewinner wählen</h3>
+    <div class="pot-preview" id="winnerPotInfo"></div>
+    <div class="winner-list" id="winnerList"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeWinnerModal()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CHIPS = [
+  { val: 5,  cls: 'c5'  },
+  { val: 10, cls: 'c10' },
+  { val: 25, cls: 'c25' },
+  { val: 50, cls: 'c50' },
+];
+const ALL_NAMES = ['Spieler 1','Spieler 2','Spieler 3','Spieler 4','Spieler 5','Spieler 6','Spieler 7','Spieler 8'];
+const START_CHIPS = 1000;
+const AUTO_SAVE_INTERVAL = 3 * 60 * 1000;
+
+let state = defaultState();
+
+function defaultState(count) {
+  const n = count || 4;
+  return {
+    playerCount: n,
+    players: ALL_NAMES.slice(0, n).map((name, i) => ({ id: i, name, chips: START_CHIPS, dir: 'sub', history: [] })),
+    round: 1, dealerIdx: 0, pot: 0, smallBlind: 10, bigBlind: 20
+  };
+}
+
+// ── localStorage Save / Load ──────────────────────────────────────────────────
+const STORAGE_KEY = 'poker-night-state';
+
+function saveState() {
+  const sbEl = document.getElementById('sbInput');
+  const bbEl = document.getElementById('bbInput');
+  if (sbEl) state.smallBlind = parseInt(sbEl.value) || 10;
+  if (bbEl) state.bigBlind   = parseInt(bbEl.value) || 20;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setStatus('saved');
+  } catch(e) {
+    setStatus('error');
+  }
+}
+
+async function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && data.players) { state = data; setStatus('saved'); return; }
+    }
+    setStatus('Neues Spiel');
+  } catch(e) {
+    setStatus('error');
+  }
+}
+
+function manualSave() { saveState(); toast('Gespeichert ✓'); }
+
+function connectLiveSync() { /* offline – kein Live-Sync nötig */ }
+
+function setStatus(type) {
+  const el = document.getElementById('saveStatus');
+  if (type === 'saved') {
+    el.className = 'save-status saved';
+    const now = new Date();
+    el.textContent = '✓ Gespeichert ' + now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+  } else if (type === 'error') {
+    el.className = 'save-status error'; el.textContent = '⚠️ Fehler beim Speichern';
+  } else { el.className = 'save-status'; el.textContent = type; }
+}
+
+function syncBlindInputs() {
+  const sbEl = document.getElementById('sbInput');
+  const bbEl = document.getElementById('bbInput');
+  if (sbEl) sbEl.value = state.smallBlind || 10;
+  if (bbEl) bbEl.value = state.bigBlind   || 20;
+}
+
+// ── Player count ──────────────────────────────────────────────────────────────
+function renderCountBtns() {
+  document.getElementById('countBtns').innerHTML = [2,3,4,5,6,7,8].map(n =>
+    `<button class="count-btn ${state.playerCount === n ? 'active' : ''}" onclick="setPlayerCount(${n})">${n}</button>`
+  ).join('');
+}
+function setPlayerCount(n) {
+  if (n === state.playerCount) return;
+  state.playerCount = n;
+  if (n > state.players.length) {
+    for (let i = state.players.length; i < n; i++)
+      state.players.push({ id: i, name: ALL_NAMES[i], chips: START_CHIPS, dir: 'sub', history: [] });
+  } else {
+    state.players = state.players.slice(0, n);
+  }
+  state.dealerIdx = state.dealerIdx % n;
+  saveState(); render();
+  toast(n + ' Spieler eingestellt.');
+}
+
+// ── Pot ───────────────────────────────────────────────────────────────────────
+function renderPot() {
+  document.getElementById('potAmount').textContent = state.pot;
+  const sb = parseInt(document.getElementById('sbInput').value) || state.smallBlind || 10;
+  const bb = parseInt(document.getElementById('bbInput').value) || state.bigBlind  || 20;
+  const roles = getRoles();
+  const sbName = state.players.find(p => p.id === roles.sb)?.name || 'SB';
+  const bbName = state.players.find(p => p.id === roles.bb)?.name || 'BB';
+  document.getElementById('blindInfo').innerHTML =
+    `<span>${sbName}</span> SB: <span>${sb}</span> &nbsp;·&nbsp; <span>${bbName}</span> BB: <span>${bb}</span>`;
+}
+function addToPot() {
+  const val = parseInt(document.getElementById('potAddInput').value);
+  if (!val || val <= 0) { toast('Bitte eine Zahl eingeben.'); return; }
+  state.pot += val;
+  document.getElementById('potAddInput').value = '';
+  saveState(); renderPot();
+}
+function resetPot() { state.pot = 0; saveState(); renderPot(); }
+function openWinnerModal() {
+  if (state.pot <= 0) { toast('Der Pott ist leer.'); return; }
+  document.getElementById('winnerPotInfo').textContent = 'Pott: ' + state.pot + ' Chips — wer hat gewonnen?';
+  document.getElementById('winnerList').innerHTML = state.players.map(p =>
+    `<div class="winner-option" onclick="awardPot(${p.id})">
+      <span>${p.name}</span><span class="winner-chips">${p.chips} Chips</span>
+    </div>`).join('');
+  document.getElementById('winnerOverlay').classList.add('on');
+}
+function awardPot(id) {
+  const p = state.players.find(p => p.id === id);
+  p.history.push(p.chips); p.chips += state.pot;
+  const won = state.pot; state.pot = 0;
+  closeWinnerModal(); saveState(); render();
+  toast('🏆 ' + p.name + ' gewinnt ' + won + ' Chips!');
+}
+function closeWinnerModal() { document.getElementById('winnerOverlay').classList.remove('on'); }
+
+// ── Roles ─────────────────────────────────────────────────────────────────────
+function getRoles() {
+  const n = state.players.length, d = state.dealerIdx % n;
+  return { dealer: state.players[d].id, sb: state.players[(d+1)%n].id, bb: state.players[(d+2)%n].id };
+}
+function nextRound() {
+  const sb = parseInt(document.getElementById('sbInput').value) || state.smallBlind || 10;
+  const bb = parseInt(document.getElementById('bbInput').value) || state.bigBlind  || 20;
+  state.dealerIdx = (state.dealerIdx + 1) % state.players.length;
+  state.round++;
+  const r = getRoles();
+  const sbP = state.players.find(p => p.id === r.sb);
+  const bbP = state.players.find(p => p.id === r.bb);
+  if (sbP) { sbP.history.push(sbP.chips); sbP.chips = Math.max(0, sbP.chips - sb); }
+  if (bbP) { bbP.history.push(bbP.chips); bbP.chips = Math.max(0, bbP.chips - bb); }
+  state.pot = sb + bb;
+  saveState(); render();
+  toast('Runde ' + state.round + ' — ' + state.players[state.dealerIdx % state.players.length].name + ' teilt aus · Pott: ' + state.pot + ' 🃏');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('roundLabel').textContent = 'RUNDE ' + state.round;
+  syncBlindInputs(); renderCountBtns(); renderPot();
+  const maxChips = Math.max(...state.players.map(p => p.chips));
+  const roles = getRoles();
+  document.getElementById('players').innerHTML = state.players.map(p => {
+    const isLeader = p.chips === maxChips && state.players.length > 1;
+    const badges = [
+      p.id === roles.dealer ? '<span class="badge badge-dealer">🃏 Dealer</span>' : '',
+      p.id === roles.sb     ? '<span class="badge badge-sb">SB</span>' : '',
+      p.id === roles.bb     ? '<span class="badge badge-bb">BB</span>' : '',
+    ].join('');
+    return `
+    <div class="card ${isLeader ? 'leader' : ''}">
+      <div class="card-header">
+        <div class="name-role-wrap">
+          <div class="player-name" onclick="openNameModal(${p.id})">${p.name}${isLeader ? ' ♛' : ''}</div>
+          <div class="role-badges">${badges}</div>
+        </div>
+        <div class="chip-count-wrap">
+          <div class="chip-count" id="count_${p.id}">${p.chips}</div>
+          <div class="chip-unit">Chips</div>
+        </div>
+      </div>
+      <div class="dir-toggle">
+        <button class="dir-btn ${p.dir==='sub'?'active':''}" onclick="setDir(${p.id},'sub')">− Abzug</button>
+        <button class="dir-btn ${p.dir==='add'?'active':''}" onclick="setDir(${p.id},'add')">+ Hinzu</button>
+      </div>
+      <div class="chips-row">
+        ${CHIPS.map(c => `<button class="chip-btn ${c.cls}" onclick="applyChip(${p.id},${c.val})"><div class="chip-inner">${c.val}</div></button>`).join('')}
+      </div>
+      <div class="undo-row">
+        <button class="undo-btn" onclick="undo(${p.id})">↩ Rückgängig</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setDir(id, dir) { state.players.find(p => p.id === id).dir = dir; saveState(); render(); }
+function applyChip(id, val) {
+  const p = state.players.find(p => p.id === id);
+  p.history.push(p.chips);
+  if (p.history.length > 30) p.history.shift();
+  if (p.dir === 'sub') { const a = Math.min(val, p.chips); p.chips -= a; state.pot += a; }
+  else { p.chips += val; }
+  saveState(); render();
+  const el = document.getElementById('count_' + id);
+  if (el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+function undo(id) {
+  const p = state.players.find(p => p.id === id);
+  if (!p.history.length) { toast('Nichts zum Rückgängigmachen.'); return; }
+  const diff = p.history[p.history.length-1] - p.chips;
+  if (diff > 0) state.pot = Math.max(0, state.pot - diff);
+  else if (diff < 0) state.pot += Math.abs(diff);
+  p.chips = p.history.pop();
+  saveState(); render();
+}
+
+let editingId = null;
+function openNameModal(id) {
+  editingId = id;
+  document.getElementById('nameInput').value = state.players.find(p => p.id === id).name;
+  document.getElementById('nameOverlay').classList.add('on');
+  setTimeout(() => document.getElementById('nameInput').select(), 80);
+}
+function closeNameModal() { document.getElementById('nameOverlay').classList.remove('on'); editingId = null; }
+function saveName() {
+  const val = document.getElementById('nameInput').value.trim();
+  if (!val) return;
+  state.players.find(p => p.id === editingId).name = val;
+  saveState(); render(); closeNameModal();
+}
+
+function newGame() {
+  const sb = parseInt(document.getElementById('sbInput').value) || 10;
+  const bb = parseInt(document.getElementById('bbInput').value) || 20;
+  const names = state.players.map(p => p.name);
+  const n = state.playerCount;
+  state = defaultState(n);
+  state.players.forEach((p, i) => { if (names[i]) p.name = names[i]; });
+  state.smallBlind = sb; state.bigBlind = bb;
+  saveState(); render(); toast('Neues Spiel! Viel Glück 🃏');
+}
+function resetAll() {
+  const sb = parseInt(document.getElementById('sbInput').value) || 10;
+  const bb = parseInt(document.getElementById('bbInput').value) || 20;
+  const names = state.players.map(p => p.name);
+  const n = state.playerCount;
+  state = defaultState(n);
+  state.players.forEach((p, i) => { if (names[i]) p.name = names[i]; });
+  state.smallBlind = sb; state.bigBlind = bb;
+  saveState(); render(); toast('Zurückgesetzt.');
+}
+
+let tt;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeNameModal(); closeWinnerModal(); }
+  if (e.key === 'Enter' && editingId !== null) saveName();
+});
+document.getElementById('nameOverlay').addEventListener('click', e => { if (e.target === document.getElementById('nameOverlay')) closeNameModal(); });
+document.getElementById('winnerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('winnerOverlay')) closeWinnerModal(); });
+
+// Init
+async function init() {
+  await loadState();
+  render();
+  connectLiveSync();
+}
+init();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./poker-sw.js').catch(() => {});
+}
+</script>
+
+</body>
+</html>
