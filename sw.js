@@ -1,4 +1,4 @@
-const CACHE = 'cubetimer-v1';
+const CACHE = 'cubetimer-v2';
 const ASSETS = ['./cubetimer.html', './manifest.json'];
 
 self.addEventListener('install', e => {
