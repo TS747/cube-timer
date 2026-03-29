@@ -437,9 +437,12 @@ function getZone(touch){
   return touch.clientX<=r.right?'left':'right';
 }
 
+const centerEl=document.getElementById('center');
+
 document.addEventListener('touchstart',e=>{
+  // If touch is inside center panel or history overlay → let buttons work normally
+  if(centerEl.contains(e.target)||histOverlay.contains(e.target)) return;
   e.preventDefault();
-  if(histOverlay.classList.contains('open')){histOverlay.classList.remove('open');return;}
   Array.from(e.changedTouches).forEach(t=>touchIds[getZone(t)].add(t.identifier));
   const wasL=leftDown,wasR=rightDown;
   leftDown=touchIds.left.size>0;rightDown=touchIds.right.size>0;
@@ -448,6 +451,7 @@ document.addEventListener('touchstart',e=>{
 },{passive:false});
 
 document.addEventListener('touchend',e=>{
+  if(centerEl.contains(e.target)||histOverlay.contains(e.target)) return;
   e.preventDefault();
   Array.from(e.changedTouches).forEach(t=>{touchIds.left.delete(t.identifier);touchIds.right.delete(t.identifier);});
   leftDown=touchIds.left.size>0;rightDown=touchIds.right.size>0;
